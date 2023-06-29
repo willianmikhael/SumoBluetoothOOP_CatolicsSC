@@ -14,27 +14,48 @@ const int enB = 10;         // ENB
 
 SoftwareSerial bluetooth(2, 3); // RX, TX pins for HC-05 module
 
+class Motor {
+  private:
+    int pin1;
+    int pin2;
+  
+  public:
+    Motor(int pin1, int pin2) : pin1(pin1), pin2(pin2) {
+      pinMode(pin1, OUTPUT);
+      pinMode(pin2, OUTPUT);
+    }
+  
+    void forward() {
+      digitalWrite(pin1, HIGH);
+      digitalWrite(pin2, LOW);
+    }
+  
+    void backward() {
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, HIGH);
+    }
+  
+    void stop() {
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+    }
+};
+
 class Car {
   private:
-    int motor1Pin1;
-    int motor1Pin2;
-    int motor2Pin1;
-    int motor2Pin2;
-    int enA;
-    int enB;
+    Motor motor1;
+    Motor motor2;
+    int enA_pin;
+    int enB_pin;
   
   public:
     Car(int pin1, int pin2, int pin3, int pin4, int enA_pin, int enB_pin)
-        : motor1Pin1(pin1), motor1Pin2(pin2), motor2Pin1(pin3), motor2Pin2(pin4),
-          enA(enA_pin), enB(enB_pin) {}
+        : motor1(pin1, pin2), motor2(pin3, pin4), enA_pin(enA_pin), enB_pin(enB_pin) {
+      pinMode(enA_pin, OUTPUT);
+      pinMode(enB_pin, OUTPUT);
+    }
   
     void initialize() {
-      pinMode(motor1Pin1, OUTPUT);
-      pinMode(motor1Pin2, OUTPUT);
-      pinMode(motor2Pin1, OUTPUT);
-      pinMode(motor2Pin2, OUTPUT);
-      pinMode(enA, OUTPUT);
-      pinMode(enB, OUTPUT);
       Serial.begin(9600);
       bluetooth.begin(9600);
     }
@@ -64,42 +85,52 @@ class Car {
     }
   
     void moveForward() {
-      digitalWrite(motor1Pin1, HIGH);
-      digitalWrite(motor1Pin2, LOW);
-      digitalWrite(motor2Pin1, HIGH);
-      digitalWrite(motor2Pin2, LOW);
+      motor1.forward();
+      motor2.forward();
       
-      analogWrite(enA, VEL_MAX);
-      analogWrite(enB, VEL_MAX);
+      analogWrite(enA_pin, VEL_MAX);
+      analogWrite(enB_pin, VEL_MAX);
     }
   
     void moveBackward() {
-      digitalWrite(motor1Pin1, LOW);
-      digitalWrite(motor1Pin2, HIGH);
-      digitalWrite(motor2Pin1, LOW);
-      digitalWrite(motor2Pin2, HIGH);
+      motor1.backward();
+      motor2.backward();
       
-      analogWrite(enA, VEL_MAX);
-      analogWrite(enB, VEL_MAX);
+      analogWrite(enA_pin, VEL_MAX);
+      analogWrite(enB_pin, VEL_MAX);
     }
   
     void turnLeft() {
-      digitalWrite(motor1Pin1, LOW);
-      digitalWrite(motor1Pin2, HIGH);
-      digitalWrite(motor2Pin1, HIGH);
-      digitalWrite(motor2Pin2, LOW);
+      motor1.backward();
+      motor2.forward();
       
-      analogWrite(enA, VEL_CURVE);
-      analogWrite(enB, VEL_CURVE);
+      analogWrite(enA_pin, VEL_CURVE);
+      analogWrite(enB_pin, VEL_CURVE);
     }
   
     void turnRight() {
-      digitalWrite(motor1Pin1, HIGH);
-      digitalWrite(motor1Pin2, LOW);
-      digitalWrite(motor2Pin1, LOW);
-      digitalWrite(motor2Pin2, HIGH);
+      motor1.forward();
+      motor2.backward();
       
-      analogWrite(enA, VEL_CURVE);
-      analogWrite(enB, VEL_CURVE);
+      analogWrite(enA_pin, VEL_CURVE);
+      analogWrite(enB_pin, VEL_CURVE);
     }
   
+    void stopMoving() {
+      motor1.stop();
+      motor2.stop();
+      
+      analogWrite(enA_pin, 0);
+      analogWrite(enB_pin, 0);
+    }
+};
+
+Car car(motor1Pin1, motor1Pin2, motor2Pin1, motor2Pin2, enA, enB);
+
+void setup() {
+  car.initialize();
+}
+
+void loop() {
+  car.processCommand();
+}
